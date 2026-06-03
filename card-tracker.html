@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Card Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#fff;--bg2:#f5f5f5;--text:#1a1a1a;--text2:#666;--text3:#999;--border:#e0e0e0;--border2:#d0d0d0}
+@media(prefers-color-scheme:dark){:root{--bg:#1a1a1a;--bg2:#242424;--text:#f0f0f0;--text2:#aaa;--text3:#666;--border:#333;--border2:#444}}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;color:var(--text);background:var(--bg)}
+.app{padding:1rem;max-width:1400px;margin:0 auto}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem}
+.topbar h1{font-size:20px;font-weight:700}
+.btn{background:var(--text);color:var(--bg);border:none;border-radius:8px;padding:7px 15px;font-size:13px;cursor:pointer;font-weight:700}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:.875rem}
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}}
+.sc{background:var(--bg2);border-radius:8px;padding:10px 12px;border:.5px solid var(--border)}
+.sc-l{font-size:11px;color:var(--text2);margin-bottom:3px}
+.sc-v{font-size:18px;font-weight:700}
+.sc-s{font-size:11px;color:var(--text3);margin-top:2px}
+.pos{color:#1d9e75}.neg{color:#d85a30}
+.filter-nav{display:flex;align-items:center;gap:4px;margin-bottom:.875rem;flex-wrap:wrap}
+.fpill{background:var(--bg2);border:.5px solid var(--border);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;color:var(--text2)}
+.fpill.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+.fsep{color:var(--text3);font-size:12px;padding:0 2px}
+.drill{background:var(--bg);border:.5px solid var(--border2);border-radius:12px;margin-bottom:.875rem;overflow:hidden}
+.drill-opts{display:flex;border-top:.5px solid var(--border)}
+.dopt{flex:1;min-width:80px;padding:10px 14px;cursor:pointer;font-size:13px;color:var(--text2);border-right:.5px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.dopt:last-child{border-right:none}.dopt:hover,.dopt.sel{background:var(--bg2)}
+.dopt.sel{color:var(--text);font-weight:700}
+.dopt .cnt{font-size:11px;color:var(--text3);font-weight:400}
+.dhdr{padding:7px 14px;font-size:11px;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.gsub{display:flex;border-top:.5px solid var(--border)}
+.gopt{flex:1;padding:8px 14px;cursor:pointer;font-size:12px;color:var(--text2);border-right:.5px solid var(--border)}
+.gopt:last-child{border-right:none}.gopt:hover,.gopt.sel{background:var(--bg2)}
+.gopt.sel{color:var(--text);font-weight:700}
+.swrap{position:relative;margin-bottom:.875rem}
+.sb{width:100%;height:38px;border:.5px solid var(--border2);border-radius:8px;padding:0 36px;font-size:13px;background:var(--bg);color:var(--text);outline:none}
+.si{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);pointer-events:none}
+.sc2{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;display:none}
+.toks{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.tok{font-size:11px;background:var(--bg2);border:.5px solid var(--border);border-radius:20px;padding:2px 10px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.tokx{cursor:pointer;color:var(--text3)}
+.rmeta{font-size:12px;color:var(--text2);margin-bottom:.75rem;min-height:18px}
+mark{background:#faeeda;color:#854f0b;border-radius:2px;padding:0 2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(185px,1fr));gap:12px;margin-top:.5rem}
+.card{background:var(--bg);border:.5px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;position:relative}
+.card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.card:hover .dbtn{opacity:1}
+.dbtn{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;background:rgba(0,0,0,.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;z-index:5;color:#fff;font-size:15px}
+.dbtn:hover{background:rgba(200,40,40,.9)}
+.dcon{position:absolute;inset:0;background:rgba(0,0,0,.8);z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:12px;padding:1rem;text-align:center}
+.dcon.on{display:flex}
+.dct{color:#fff;font-size:13px;font-weight:700}
+.dcs{color:rgba(255,255,255,.65);font-size:11px}
+.dca{display:flex;gap:8px;margin-top:4px}
+.dc-no{padding:6px 14px;border:.5px solid rgba(255,255,255,.4);border-radius:8px;background:transparent;color:#fff;font-size:12px;cursor:pointer}
+.dc-yes{padding:6px 14px;border:none;border-radius:8px;background:#d85a30;color:#fff;font-size:12px;cursor:pointer;font-weight:700}
+.imgw{position:relative;height:190px;background:var(--bg2);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.imgw img{width:100%;height:100%;object-fit:contain}
+.ph{font-size:44px}
+.cbr{position:absolute;top:7px;right:7px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;pointer-events:none}
+.cbl{position:absolute;top:7px;left:7px;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:700;pointer-events:none}
+.ljp{background:#dceefb;color:#1565c0}.len{background:#d4edda;color:#155724}
+.graw{background:#faeeda;color:#854f0b}.gpsa{background:#dceefb;color:#1565c0}
+.gbgs{background:#ede7f6;color:#4527a0}.gcgc{background:#d4edda;color:#155724}
+.cbody{padding:10px}
+.cn{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}
+.cs{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}
+.prow{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px}
+.pl{font-size:10px;color:var(--text3)}
+.pv{font-size:15px;font-weight:700}
+.bl{font-size:10px;color:var(--text2);margin-top:2px}
+.ps{font-size:10px;color:var(--text2);margin-top:3px;margin-bottom:5px}
+.pct{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;margin-top:3px;flex-shrink:0}
+.pp{background:#d4edda;color:#155724}.pn{background:#f8d7da;color:#721c24}
+.mc{margin-bottom:7px}
+.acts{display:flex;gap:4px}
+.act{flex:1;font-size:10px;padding:5px;border:.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text2);cursor:pointer;text-align:center;text-decoration:none;display:block}
+.act:hover{background:var(--bg2)}.alink{color:#1565c0}
+.empty{text-align:center;padding:4rem 1rem;color:var(--text2);grid-column:1/-1}
+/* FX */
+.fab{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.fabt{width:54px;height:54px;border-radius:50%;background:var(--text);color:var(--bg);border:none;cursor:pointer;font-size:22px;box-shadow:0 2px 12px rgba(0,0,0,.2)}
+.fxp{background:var(--bg);border:.5px solid var(--border2);border-radius:14px;width:310px;overflow:hidden;display:none;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.fxp.open{display:block}
+.fxh{padding:11px 14px 0;display:flex;align-items:center;justify-content:space-between}
+.fxh span{font-size:13px;font-weight:700}
+.fxhc{background:none;border:none;cursor:pointer;color:var(--text2);font-size:16px}
+.fxr{display:flex;border-top:.5px solid var(--border);border-bottom:.5px solid var(--border);margin-top:9px}
+.fxri{flex:1;padding:8px 11px;border-right:.5px solid var(--border);font-size:11px}
+.fxri:last-child{border-right:none}
+.fxrl{color:var(--text3);margin-bottom:2px}.fxrv{font-weight:700;font-size:12px}
+.fxc{padding:12px 14px}
+.fxi{width:100%;height:36px;border:.5px solid var(--border2);border-radius:8px;padding:0 10px;font-size:14px;background:var(--bg);color:var(--text);margin-bottom:9px;outline:none}
+.csel{display:flex;gap:4px;margin-bottom:9px}
+.cbtn{flex:1;padding:5px 4px;border:.5px solid var(--border2);border-radius:8px;font-size:11px;cursor:pointer;background:transparent;color:var(--text2);text-align:center}
+.cbtn.on{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:700}
+.fxa{text-align:center;color:var(--text3);font-size:14px;margin-bottom:8px}
+.fxrb{background:var(--bg2);border-radius:8px;padding:11px 13px}
+.fxrm{font-size:22px;font-weight:700}.fxrs{font-size:11px;color:var(--text2);margin-top:3px}
+.fxref{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3);padding:6px 14px 11px;cursor:pointer;border:none;background:none;width:100%}
+/* Modals */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px}
+.ov.on{display:flex}
+.md{background:var(--bg);border-radius:14px;width:100%;max-width:720px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.md.sm{max-width:620px}
+.mh{padding:1rem 1.25rem .875rem;display:flex;justify-content:space-between;align-items:center;border-bottom:.5px solid var(--border);flex-shrink:0}
+.mh h2{font-size:16px;font-weight:700}
+.mb{padding:1.25rem;overflow-y:auto;flex:1}
+.mx{background:none;border:none;font-size:18px;cursor:pointer;color:var(--text2)}
+/* Detail */
+.dg{display:grid;grid-template-columns:175px 1fr;gap:1.25rem}
+@media(max-width:520px){.dg{grid-template-columns:1fr}}
+.dib{width:100%;border-radius:8px;background:var(--bg2);display:flex;align-items:center;justify-content:center;overflow:hidden;border:.5px solid var(--border);min-height:240px}
+.dib img{width:100%;height:auto}
+.pbox{background:var(--bg2);border-radius:8px;padding:11px 13px;margin-bottom:10px;font-size:12px;border:.5px solid var(--border)}
+.pbt{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.pbr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.pbr:last-child{margin-bottom:0}
+.pbl{color:var(--text2)}.pbv{font-weight:700}
+.ab{border:.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px}
+.abh{background:var(--bg2);padding:8px 13px;font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.ag{display:grid;grid-template-columns:repeat(3,1fr)}
+.ac{padding:10px 13px;border-right:.5px solid var(--border);border-top:.5px solid var(--border)}
+.ac:last-child{border-right:none}
+.acl{font-size:10px;color:var(--text2);margin-bottom:4px}.acv{font-size:16px;font-weight:700}
+.acs{font-size:10px;color:var(--text3);margin-top:3px}
+.tb{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:12px;font-size:12px;font-weight:700;margin-top:5px}
+.tbu{background:#d4edda;color:#155724}.tbd{background:#f8d7da;color:#721c24}
+.ht{width:100%;font-size:11px;border-collapse:collapse;margin-top:4px}
+.ht td,.ht th{padding:5px 8px;text-align:left;border-bottom:.5px solid var(--border)}
+.ht th{color:var(--text2);font-weight:500;font-size:10px;text-transform:uppercase}
+.pb{border:.5px solid var(--border);border-radius:8px;overflow:hidden;cursor:pointer;margin-top:1rem}
+.pb:hover{border-color:var(--border2)}
+.pbi{display:flex;align-items:center;gap:13px;padding:11px 13px}
+.pbe{width:50px;height:70px;border-radius:8px;background:var(--bg2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px}
+.pbn{font-size:13px;font-weight:700;margin-bottom:2px}
+.pbs{font-size:11px;color:var(--text2)}
+.pbt2{font-size:11px;color:#1565c0;margin-top:4px}
+.t10g{display:grid;grid-template-columns:repeat(auto-fill,minmax(115px,1fr));gap:9px;margin-top:12px}
+.t10c{background:var(--bg2);border-radius:8px;overflow:hidden;border:.5px solid var(--border)}
+.t10i{height:85px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.t10i img{width:100%;height:100%;object-fit:contain}
+.t10b{padding:5px 8px}
+.t10r{font-size:10px;color:var(--text3)}
+.t10n{font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t10p{font-size:11px;font-weight:700;color:#1d9e75;margin-top:1px}
+/* Add */
+.apib{background:var(--bg2);border:.5px solid var(--border2);border-radius:12px;padding:13px 15px;margin-bottom:15px}
+.apis{font-size:12px;font-weight:700;margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.apis.ok{color:#155724}.apis.need{color:var(--text2)}
+.apir{display:flex;gap:8px;align-items:center}
+.apii{flex:1;height:36px;border:.5px solid var(--border2);border-radius:8px;padding:0 10px;font-size:12px;font-family:monospace;background:var(--bg);color:var(--text);outline:none}
+.apisv{padding:0 13px;height:36px;border:none;border-radius:8px;background:var(--text);color:var(--bg);font-size:12px;cursor:pointer;font-weight:700}
+.apicl{padding:0 10px;height:36px;border:.5px solid var(--border2);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;color:var(--text2);display:none}
+.apih{font-size:11px;color:var(--text3);margin-top:7px;line-height:1.6}
+.apih a{color:#1565c0;text-decoration:none}
+.sdrop{border:2px dashed var(--border2);border-radius:12px;padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--bg2)}
+.sdrop:hover{border-color:var(--border)}
+.sdrop p{font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6}
+.sthumbs{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.sthumb{width:76px;height:76px;border-radius:8px;object-fit:cover;border:.5px solid var(--border)}
+.sst{margin-top:12px;border-radius:12px;overflow:hidden;border:.5px solid var(--border)}
+.ssh{padding:10px 13px;font-size:12px;font-weight:700;display:flex;align-items:center;gap:8px}
+.ssh.pend{background:var(--bg2);color:var(--text2)}
+.ssh.ok{background:#d4edda;color:#155724}
+.ssh.err{background:#f8d7da;color:#721c24}
+.sp{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fr label{display:block;font-size:11px;color:var(--text2);margin-bottom:3px;font-weight:600}
+.fr input,.fr select{width:100%;height:35px;border:.5px solid var(--border2);border-radius:8px;padding:0 10px;font-size:13px;background:var(--bg);color:var(--text);outline:none}
+.fr.full{grid-column:1/-1}
+.sec{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin:14px 0 7px}
+.fxbox{background:var(--bg2);border-radius:8px;padding:10px 12px;margin-top:7px;display:flex;gap:14px;font-size:12px;border:.5px solid var(--border)}
+.fxbi .xl{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:600}
+.fxbi .xv{font-weight:700}
+.subtn{width:100%;background:var(--text);color:var(--bg);border:none;border-radius:12px;padding:11px;font-size:14px;cursor:pointer;margin-top:13px;font-weight:700}
+.fgrid{display:grid;grid-template-columns:1fr 1fr}
+.ff{padding:7px 13px;font-size:12px;border-top:.5px solid var(--border)}
+.ff:nth-child(odd){border-right:.5px solid var(--border)}
+.ffl{font-size:10px;color:var(--text3);margin-bottom:2px;font-weight:600;text-transform:uppercase}
+.ffv{font-weight:700}
+.ofp{display:flex;align-items:center;gap:11px;padding:9px 13px;border-top:.5px solid var(--border);background:var(--bg2)}
+.ofi{width:46px;height:65px;object-fit:contain;border-radius:8px;border:.5px solid var(--border)}
+.dupb{margin-top:12px;border:1.5px solid #f0a040;border-radius:12px;overflow:hidden;background:#fffbf0}
+.duph{background:#faeeda;padding:11px 14px;font-size:13px;font-weight:700;color:#854f0b}
+.dupr{display:flex;align-items:center;gap:13px;padding:11px 14px;border-top:.5px solid #f0d8a0}
+.dupi{width:50px;height:70px;border-radius:8px;background:var(--bg2);border:.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;overflow:hidden}
+.dupi img{width:100%;height:100%;object-fit:contain}
+.dupn{font-weight:700;font-size:12px;margin-bottom:3px}
+.dupm{font-size:11px;color:var(--text2);line-height:1.6}
+.dupa{display:flex;gap:8px;padding:0 14px 13px}
+.dupav{flex:1;padding:8px;border:.5px solid var(--border2);border-radius:8px;background:transparent;font-size:12px;cursor:pointer;color:var(--text2);font-weight:600}
+.dupaa{flex:1;padding:8px;border:none;border-radius:8px;background:#854f0b;color:#fff;font-size:12px;cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <h1>&#x1F0CF; Card Tracker</h1>
+    <button class="btn" id="addBtn">+ Add Card</button>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="filter-nav" id="fnav"></div>
+  <div class="drill" id="drill" style="display:none"></div>
+  <div class="swrap">
+    <span class="si">&#x1F50D;</span>
+    <input class="sb" id="srch" placeholder="Search name, set, number, rarity, grade...">
+    <button class="sc2" id="sclr">&#x2715;</button>
+  </div>
+  <div class="toks" id="toks"></div>
+  <div class="rmeta" id="rmeta"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<div class="ov" id="detOv">
+  <div class="md">
+    <div class="mh"><h2 id="detTitle"></h2><button class="mx" id="detClose">&#x2715;</button></div>
+    <div class="mb" id="detBody"></div>
+  </div>
+</div>
+
+<div class="ov" id="packOv">
+  <div class="md">
+    <div class="mh"><h2 id="packTitle"></h2><button class="mx" id="packClose">&#x2715;</button></div>
+    <div class="mb" id="packBody"></div>
+  </div>
+</div>
+
+<div class="ov" id="addOv">
+  <div class="md sm">
+    <div class="mh"><h2>Add Card</h2><button class="mx" id="addClose">&#x2715;</button></div>
+    <div class="mb">
+      <div class="apib">
+        <div class="apis need" id="apiSt"><span>&#x1F511;</span><span id="apiStTxt">Add Anthropic API key to enable auto-scan</span></div>
+        <div class="apir">
+          <input class="apii" type="password" id="apiKey" placeholder="sk-ant-api03-...">
+          <button class="apisv" id="apiSave">Save</button>
+          <button class="apicl" id="apiClr">Clear</button>
+        </div>
+        <div class="apih" id="apiHint">Get free key: <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> &rarr; API Keys &rarr; Create Key &nbsp;&middot;&nbsp; ~$0.001/scan &nbsp;&middot;&nbsp; Stored locally in your browser</div>
+      </div>
+      <div class="sdrop" id="sdrop">
+        <div style="font-size:30px">&#x1F4F7;</div>
+        <p id="sdropTxt"><strong>Upload card photo</strong> &mdash; AI identifies &amp; auto-fills all fields<br><span style="font-size:11px;opacity:.7">Save API key above first &middot; JPG &middot; PNG &middot; WEBP &middot; PSA/BGS/CGC slabs</span></p>
+        <div class="sthumbs" id="sthumbs"></div>
+      </div>
+      <input type="file" id="fi" accept="image/*" style="display:none">
+      <div id="scanPanel" style="display:none">
+        <div id="stScan" class="sst" style="display:none"><div class="ssh pend"><div class="sp"></div>Scanning &amp; checking duplicates...</div></div>
+        <div id="stOk" class="sst" style="display:none"><div class="ssh ok">&#x2713; Card identified &mdash; fields auto-filled</div><div class="fgrid" id="scanGrid"></div><div id="scanImg"></div></div>
+        <div id="stErr" class="sst" style="display:none"><div class="ssh err" id="errTxt"></div></div>
+        <div id="dupBox" style="display:none"></div>
+      </div>
+      <div class="sec">Card Info</div>
+      <div class="fg">
+        <div class="fr"><label>Card Name</label><input id="fn" placeholder="e.g. Psyduck"></div>
+        <div class="fr"><label>Set</label><input id="fs" placeholder="e.g. M2a Mega Dream"></div>
+        <div class="fr"><label>Card Number</label><input id="fno" placeholder="e.g. 199/193"></div>
+        <div class="fr"><label>Rarity</label><input id="fra" placeholder="e.g. AR, SAR, SEC"></div>
+        <div class="fr"><label>Game</label><select id="fgm"><option value="pokemon">Pokemon</option><option value="onepiece">One Piece</option></select></div>
+        <div class="fr"><label>Version</label><select id="fvr"><option value="JP">JP</option><option value="EN">EN</option></select></div>
+        <div class="fr"><label>Condition</label><select id="fcd"><option value="raw">Ungraded</option><option value="PSA">PSA</option><option value="BGS">BGS</option><option value="CGC">CGC</option></select></div>
+        <div class="fr" id="fgn" style="display:none"><label>Grade Score</label><input id="fgs" placeholder="e.g. 10"></div>
+        <div class="fr full" id="fcn" style="display:none"><label>Cert Number</label><input id="fct"></div>
+      </div>
+      <div class="sec">Purchase Details</div>
+      <div class="fg">
+        <div class="fr"><label>Buy Price (GBP)</label><input type="number" id="fbp" placeholder="0.00"></div>
+        <div class="fr"><label>Market Price (GBP)</label><input type="number" id="fmp" placeholder="0.00"></div>
+        <div class="fr"><label>Date Purchased</label><input type="date" id="fbd"></div>
+        <div class="fr"><label>Purchased From</label><input id="fbf" placeholder="e.g. eBay, Card Shop HK"></div>
+      </div>
+      <div class="fxbox" id="fxbox" style="display:none">
+        <div class="fxbi"><div class="xl">Buy HKD</div><div class="xv" id="fb2">-</div></div>
+        <div class="fxbi"><div class="xl">Buy JPY</div><div class="xv" id="fb3">-</div></div>
+        <div class="fxbi"><div class="xl">Mkt HKD</div><div class="xv" id="fm2">-</div></div>
+        <div class="fxbi"><div class="xl">Mkt JPY</div><div class="xv" id="fm3">-</div></div>
+      </div>
+      <button class="subtn" id="addSubmit">Add to Collection</button>
+    </div>
+  </div>
+</div>
+
+<div class="fab">
+  <div class="fxp" id="fxPanel">
+    <div class="fxh"><span>&#x1F4B1; Currency</span><button class="fxhc" id="fxClose">&#x2715;</button></div>
+    <div class="fxr">
+      <div class="fxri"><div class="fxrl">GBP to HKD</div><div class="fxrv" id="rHK">10.6100</div></div>
+      <div class="fxri"><div class="fxrl">GBP to JPY</div><div class="fxrv" id="rJP">213.04</div></div>
+    </div>
+    <div class="fxc">
+      <input class="fxi" type="number" id="fxAmt" placeholder="0.00">
+      <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">From</div>
+      <div class="csel" id="fromSel">
+        <button class="cbtn on" data-c="GBP">&pound; GBP</button>
+        <button class="cbtn" data-c="HKD">$ HKD</button>
+        <button class="cbtn" data-c="JPY">&yen; JPY</button>
+      </div>
+      <div class="fxa">&#x2193;</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:5px;font-weight:600">To</div>
+      <div class="csel" id="toSel">
+        <button class="cbtn" data-c="GBP">&pound; GBP</button>
+        <button class="cbtn on" data-c="HKD">$ HKD</button>
+        <button class="cbtn" data-c="JPY">&yen; JPY</button>
+      </div>
+      <div class="fxrb"><div class="fxrm" id="fxRes">-</div><div class="fxrs" id="fxRt">Enter amount above</div></div>
+    </div>
+    <button class="fxref" id="fxRef">&#x21BB; Refresh &middot; <span id="fxTime">-</span></button>
+  </div>
+  <button class="fabt" id="fxBtn">&#x1F4B1;</button>
+</div>
+
+<script>
+(function() {
+'use strict';
+
+// ── Helpers ──
+function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function eRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+function $(id) { return document.getElementById(id); }
+function on(id, ev, fn) { $(id).addEventListener(ev, fn); }
+
+// ── Storage ──
+function saveC() { try { localStorage.setItem('ct_v3', JSON.stringify(cards)); } catch(x) {} }
+function loadC() { try { var d=localStorage.getItem('ct_v3'); if(d) { cards=JSON.parse(d); return true; } } catch(x) {} return false; }
+
+// ── FX rates ──
+var FX = { hkd: 10.61, jpy: 213.04 };
+var fxFrom = 'GBP', fxTo = 'HKD';
+function toHKD(g) { return Math.round(g * FX.hkd); }
+function toJPY(g) { return Math.round(g * FX.jpy); }
+function toRate(f, t) {
+  var base = { GBP:1, HKD:1/FX.hkd, JPY:1/FX.jpy };
+  var out = { GBP:1, HKD:FX.hkd, JPY:FX.jpy };
+  return base[f] * out[t];
+}
+
+function calcFX() {
+  var a = parseFloat($('fxAmt').value);
+  if (!a || isNaN(a)) { $('fxRes').textContent='-'; $('fxRt').textContent='Enter amount above'; return; }
+  var rate = toRate(fxFrom, fxTo), res = a * rate;
+  var sym = { GBP:'£', HKD:'$', JPY:'¥' };
+  $('fxRes').textContent = sym[fxTo] + (fxTo==='JPY' ? Math.round(res).toLocaleString() : res.toFixed(2));
+  $('fxRt').textContent = '1 '+fxFrom+' = '+sym[fxTo]+toRate(fxFrom,fxTo).toFixed(fxTo==='JPY'?2:4)+' '+fxTo;
+}
+
+async function doFX() {
+  try {
+    var r = await fetch('https://api.frankfurter.app/latest?from=GBP&to=HKD,JPY');
+    var d = await r.json();
+    FX.hkd = +d.rates.HKD.toFixed(4);
+    FX.jpy = +d.rates.JPY.toFixed(2);
+  } catch(x) {}
+  $('rHK').textContent = FX.hkd.toFixed(4);
+  $('rJP').textContent = FX.jpy.toFixed(2);
+  $('fxTime').textContent = new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  calcFX();
+  draw();
+}
+
+on('fxBtn','click',function(){ $('fxPanel').classList.toggle('open'); });
+on('fxClose','click',function(){ $('fxPanel').classList.remove('open'); });
+on('fxAmt','input', calcFX);
+on('fxRef','click', doFX);
+
+document.querySelectorAll('#fromSel .cbtn').forEach(function(b) {
+  b.addEventListener('click', function() {
+    fxFrom = b.dataset.c;
+    document.querySelectorAll('#fromSel .cbtn').forEach(function(x){ x.classList.toggle('on', x.dataset.c===fxFrom); });
+    calcFX();
+  });
+});
+document.querySelectorAll('#toSel .cbtn').forEach(function(b) {
+  b.addEventListener('click', function() {
+    fxTo = b.dataset.c;
+    document.querySelectorAll('#toSel .cbtn').forEach(function(x){ x.classList.toggle('on', x.dataset.c===fxTo); });
+    calcFX();
+  });
+});
+
+// ── Search ──
+var searchQ = '', searchToks = [];
+function tokenise(q) { return q.trim().toLowerCase().split(/\s+/).filter(function(t){return t.length>0;}); }
+function cText(c) { return [c.name,c.set,c.num,c.rar,c.gr,c.gs,c.ver,c.game,c.cert,c.from].concat((c.num||'').split(/[\/\-]/)).filter(Boolean).join(' ').toLowerCase(); }
+function cMatch(c,toks) { if(!toks.length) return true; var t=cText(c); return toks.every(function(tk){return t.indexOf(tk)>=0;}); }
+function hlText(str, toks) {
+  if (!toks.length) return e(str);
+  var r = e(str);
+  toks.forEach(function(t) { r = r.replace(new RegExp('('+eRe(t)+')','gi'),'<mark>$1</mark>'); });
+  return r;
+}
+
+on('srch','input',function(){
+  searchQ = this.value;
+  searchToks = tokenise(searchQ);
+  $('sclr').style.display = searchQ ? 'block' : 'none';
+  draw();
+});
+on('sclr','click',function(){
+  searchQ=''; searchToks=[];
+  $('srch').value='';
+  $('sclr').style.display='none';
+  draw();
+});
+
+function removeTok(i) {
+  searchToks.splice(i,1);
+  searchQ = searchToks.join(' ');
+  $('srch').value = searchQ;
+  $('sclr').style.display = searchQ ? 'block' : 'none';
+  draw();
+}
+
+function renderMeta(total, matched) {
+  var tok=$('toks'), meta=$('rmeta');
+  if (!searchToks.length) { meta.textContent=''; tok.innerHTML=''; return; }
+  tok.innerHTML = searchToks.map(function(t,i){
+    return '<span class="tok">'+e(t)+'<span class="tokx" data-i="'+i+'">&#x2715;</span></span>';
+  }).join('');
+  tok.querySelectorAll('.tokx').forEach(function(x){
+    x.addEventListener('click',function(){ removeTok(+x.dataset.i); });
+  });
+  meta.innerHTML = 'Showing <strong>'+matched+'</strong> of '+total;
+}
+
+// ── Filters ──
+var F = { tcg:null, lang:null, grade:null, gs:null };
+var activeDrill = null;
+
+var PACKS = {
+  'Obsidian Flames': { em:'&#x1F525;', full:'S&V — Obsidian Flames', id:'sv3' },
+  'Celebrations': { em:'&#x1F389;', full:'25th Anniversary Celebrations', id:'cel25' },
+  'Scarlet & Violet 151': { em:'&#x1F33F;', full:'Scarlet & Violet 151', id:'sv3pt5' },
+  'Romance Dawn OP-01': { em:'&#x1F3F4;&#xFE0F;', full:'One Piece TCG — Romance Dawn [OP-01]', id:'OP01' },
+  'Paramount War OP-02': { em:'&#x2694;&#xFE0F;', full:'One Piece TCG — Paramount War [OP-02]', id:'OP02' },
+  'Pillars of Strength OP-03': { em:'&#x1F4AA;', full:'One Piece TCG — Pillars of Strength [OP-03]', id:'OP03' },
+  'M2a Mega Dream': { em:'&#x2728;', full:'Pokemon Japanese M2a — Mega Dream ex', id:'m2a' }
+};
+
+var PT = {
+  sv3:[{n:'Charizard ex SAR',num:'215/197',mp:420,g:'pokemon'},{n:'Charizard ex UR',num:'214/197',mp:195,g:'pokemon'},{n:'Dragonite ex SAR',num:'220/197',mp:85,g:'pokemon'},{n:'Groudon ex SAR',num:'221/197',mp:62,g:'pokemon'},{n:'Tyranitar ex SAR',num:'216/197',mp:38,g:'pokemon'},{n:'Iono UR',num:'225/197',mp:32,g:'pokemon'},{n:'Pidgeot ex UR',num:'230/197',mp:28,g:'pokemon'},{n:'Revavroom ex SAR',num:'217/197',mp:22,g:'pokemon'},{n:'Houndstone ex SAR',num:'219/197',mp:18,g:'pokemon'},{n:'Slowking ex SAR',num:'218/197',mp:15,g:'pokemon'}],
+  cel25:[{n:'Pikachu VMAX Rainbow',num:'188/185',mp:320,g:'pokemon'},{n:'Charizard VMAX',num:'074/025',mp:180,g:'pokemon'},{n:'Umbreon VMAX Alt',num:'215/185',mp:95,g:'pokemon'},{n:'Umbreon V Alt',num:'189/184',mp:55,g:'pokemon'},{n:'Rayquaza VMAX',num:'218/185',mp:42,g:'pokemon'},{n:'Mew VMAX',num:'114/264',mp:28,g:'pokemon'},{n:"Lance's Charizard V",num:'183/185',mp:22,g:'pokemon'},{n:'Pikachu V',num:'043/025',mp:15,g:'pokemon'},{n:'Anniversary Logo',num:'025/025',mp:12,g:'pokemon'},{n:'Glaceon',num:'189/203',mp:38,g:'pokemon'}],
+  sv3pt5:[{n:'Charizard ex SAR',num:'199/165',mp:155,g:'pokemon'},{n:'Mewtwo ex SAR',num:'205/165',mp:82,g:'pokemon'},{n:"Giovanni's Charisma UR",num:'244/165',mp:72,g:'pokemon'},{n:'Mew ex SAR',num:'232/165',mp:68,g:'pokemon'},{n:"Erika's Invitation UR",num:'243/165',mp:55,g:'pokemon'},{n:'Gengar ex SAR',num:'225/165',mp:45,g:'pokemon'},{n:'Blastoise ex SAR',num:'200/165',mp:42,g:'pokemon'},{n:'Venusaur ex SAR',num:'198/165',mp:38,g:'pokemon'},{n:'Arcanine ex SAR',num:'207/165',mp:28,g:'pokemon'},{n:'Alakazam ex SAR',num:'202/165',mp:24,g:'pokemon'}],
+  OP01:[{n:'Portgas D. Ace SEC',num:'OP01-121',mp:3100,g:'onepiece'},{n:'Monkey D. Luffy SP',num:'OP01-060',mp:520,g:'onepiece'},{n:'Edward Newgate L',num:'OP01-004',mp:280,g:'onepiece'},{n:'Trafalgar Law L',num:'OP01-036',mp:65,g:'onepiece'},{n:'Boa Hancock SR',num:'OP01-086',mp:48,g:'onepiece'},{n:'Roronoa Zoro SR',num:'OP01-025',mp:42,g:'onepiece'},{n:'Whitebeard SR',num:'OP01-005',mp:35,g:'onepiece'},{n:'Nami SR',num:'OP01-016',mp:28,g:'onepiece'},{n:'Doflamingo SR',num:'OP01-061',mp:22,g:'onepiece'},{n:'Luffy L',num:'OP01-002',mp:18,g:'onepiece'}],
+  OP02:[{n:'Kaido SEC',num:'OP02-099',mp:850,g:'onepiece'},{n:'Big Mom L',num:'OP02-076',mp:120,g:'onepiece'},{n:'Yamato L',num:'OP02-110',mp:95,g:'onepiece'},{n:'Roronoa Zoro SR',num:'OP02-061',mp:62,g:'onepiece'},{n:'Marco SR',num:'OP02-034',mp:45,g:'onepiece'},{n:'Charlotte Linlin SR',num:'OP02-094',mp:38,g:'onepiece'},{n:'Edward Newgate SR',num:'OP02-004',mp:32,g:'onepiece'},{n:'Ace SR',num:'OP02-040',mp:28,g:'onepiece'},{n:'Ulti SR',num:'OP02-114',mp:18,g:'onepiece'},{n:'Nami SR',num:'OP02-016',mp:14,g:'onepiece'}],
+  OP03:[{n:'Boa Hancock SEC',num:'OP03-099',mp:220,g:'onepiece'},{n:'Enel L',num:'OP03-112',mp:145,g:'onepiece'},{n:'Katakuri L',num:'OP03-058',mp:88,g:'onepiece'},{n:'Rob Lucci L',num:'OP03-033',mp:62,g:'onepiece'},{n:'Boa Hancock SR',num:'OP03-086',mp:48,g:'onepiece'},{n:'Nami SR',num:'OP03-016',mp:32,g:'onepiece'},{n:'Big Mom SR',num:'OP03-076',mp:28,g:'onepiece'},{n:'Judge SR',num:'OP03-062',mp:22,g:'onepiece'},{n:'Crocodile SR',num:'OP03-045',mp:18,g:'onepiece'},{n:'Perona SR',num:'OP03-054',mp:15,g:'onepiece'}],
+  m2a:[{n:'Pikachu ex SAR',num:'195',mp:340,g:'pokemon'},{n:'Charizard ex SAR',num:'201',mp:280,g:'pokemon'},{n:'Mewtwo ex SAR',num:'198',mp:120,g:'pokemon'},{n:'Mew ex SAR',num:'196',mp:95,g:'pokemon'},{n:'Psyduck AR',num:'199',mp:85,g:'pokemon'},{n:'Gengar ex SAR',num:'200',mp:75,g:'pokemon'},{n:'Eevee AR',num:'197',mp:65,g:'pokemon'},{n:'Snorlax AR',num:'202',mp:45,g:'pokemon'},{n:'Slowpoke AR',num:'194',mp:38,g:'pokemon'},{n:'Magikarp AR',num:'193',mp:28,g:'pokemon'}]
+};
+
+function cntFor(patch) {
+  var m = Object.assign({},F,patch);
+  return cards.filter(function(c) {
+    if(m.tcg&&c.game!==m.tcg) return false;
+    if(m.lang&&c.ver!==m.lang) return false;
+    if(m.grade==='ungraded'&&c.gr!=='raw') return false;
+    if(m.grade==='graded'&&c.gr==='raw') return false;
+    if(m.grade==='graded'&&m.gs&&c.gs!==m.gs) return false;
+    return true;
+  }).length;
+}
+
+function filterBase(c) {
+  if(F.tcg&&c.game!==F.tcg) return false;
+  if(F.lang&&c.ver!==F.lang) return false;
+  if(F.grade==='ungraded'&&c.gr!=='raw') return false;
+  if(F.grade==='graded'&&c.gr==='raw') return false;
+  if(F.grade==='graded'&&F.gs&&c.gs!==F.gs) return false;
+  return true;
+}
+
+function renderFilters() {
+  var nav=$('fnav'), dr=$('drill');
+  var isAll=!F.tcg&&!F.lang&&!F.grade;
+  var tl=F.tcg?(F.tcg==='pokemon'?'Pokemon':'One Piece'):'TCG';
+  var ll=F.lang||'Language';
+  var gl='Grading'; if(F.grade==='ungraded') gl='Ungraded'; else if(F.grade==='graded') gl=F.gs?'Graded '+F.gs:'Graded';
+  nav.innerHTML=
+    '<button class="fpill'+(isAll?' active':'')+'" data-act="all">All</button>'+
+    '<span class="fsep">&rsaquo;</span>'+
+    '<button class="fpill'+(F.tcg?' active':'')+'" data-act="tcg">'+tl+' &#x25BE;</button>'+
+    '<span class="fsep">&rsaquo;</span>'+
+    '<button class="fpill'+(F.lang?' active':'')+'" data-act="lang">'+ll+' &#x25BE;</button>'+
+    '<span class="fsep">&rsaquo;</span>'+
+    '<button class="fpill'+(F.grade?' active':'')+'" data-act="grade">'+gl+' &#x25BE;</button>';
+  nav.querySelectorAll('.fpill').forEach(function(b) {
+    b.addEventListener('click', function() {
+      var a=b.dataset.act;
+      if(a==='all'){F={tcg:null,lang:null,grade:null,gs:null};activeDrill=null;}
+      else{activeDrill=activeDrill===a?null:a;}
+      renderFilters(); draw();
+    });
+  });
+  if(!activeDrill){dr.style.display='none';return;}
+  dr.style.display='block';
+  if(activeDrill==='tcg'){
+    dr.innerHTML='<div class="dhdr">Select TCG</div><div class="drill-opts">'+
+      ['pokemon','onepiece'].map(function(v){var l=v==='pokemon'?'Pokemon':'One Piece';return '<div class="dopt'+(F.tcg===v?' sel':'')+'" data-v="'+v+'">'+l+'<span class="cnt">'+cntFor({tcg:v})+'</span></div>';}).join('')+'</div>';
+    dr.querySelectorAll('.dopt').forEach(function(d){d.addEventListener('click',function(){F.tcg=F.tcg===d.dataset.v?null:d.dataset.v;activeDrill=null;renderFilters();draw();});});
+  } else if(activeDrill==='lang'){
+    dr.innerHTML='<div class="dhdr">Select Language</div><div class="drill-opts">'+
+      ['JP','EN'].map(function(v){return '<div class="dopt'+(F.lang===v?' sel':'')+'" data-v="'+v+'">'+v+'<span class="cnt">'+cntFor({lang:v})+'</span></div>';}).join('')+'</div>';
+    dr.querySelectorAll('.dopt').forEach(function(d){d.addEventListener('click',function(){F.lang=F.lang===d.dataset.v?null:d.dataset.v;activeDrill=null;renderFilters();draw();});});
+  } else if(activeDrill==='grade'){
+    var sh=F.grade==='graded';
+    dr.innerHTML='<div class="dhdr">Select Grading</div><div class="drill-opts">'+
+      '<div class="dopt'+(F.grade==='ungraded'?' sel':'')+'" data-v="ungraded">Ungraded<span class="cnt">'+cntFor({grade:'ungraded'})+'</span></div>'+
+      '<div class="dopt'+(F.grade==='graded'?' sel':'')+'" data-v="graded">Graded<span class="cnt">'+cntFor({grade:'graded'})+'</span></div>'+
+      '</div>'+(sh?'<div class="gsub">'+
+        '<div class="gopt'+(!F.gs?' sel':'')+'" data-gs="">All graded</div>'+
+        '<div class="gopt'+(F.gs==='9.5'?' sel':'')+'" data-gs="9.5">Grade 9.5 <span style="font-size:11px;color:var(--text3)">'+cntFor({grade:'graded',gs:'9.5'})+'</span></div>'+
+        '<div class="gopt'+(F.gs==='10'?' sel':'')+'" data-gs="10">Grade 10 <span style="font-size:11px;color:var(--text3)">'+cntFor({grade:'graded',gs:'10'})+'</span></div>'+
+        '</div>':'');
+    dr.querySelectorAll('.dopt').forEach(function(d){d.addEventListener('click',function(){
+      var v=d.dataset.v;
+      if(F.grade===v){F.grade=null;F.gs=null;}else{F.grade=v;F.gs=null;}
+      if(F.grade!=='graded')activeDrill=null;
+      renderFilters();draw();
+    });});
+    if(sh){dr.querySelectorAll('.gopt').forEach(function(g){g.addEventListener('click',function(){F.gs=g.dataset.gs||null;draw();renderFilters();});});}
+  }
+}
+
+// ── Card data ──
+function genH(mkt,buy) {
+  var h=[],v=buy*.88,t=new Date();
+  for(var i=30;i>=0;i--){var d=new Date(t);d.setDate(d.getDate()-i);v*=(1+(Math.random()-.47)*.06);h.push({date:d.toISOString().slice(0,10),g:+v.toFixed(2)});}
+  h[0].g=buy*0.9; h[h.length-1].g=mkt; return h;
+}
+
+var SEED=[
+  {id:1,name:'Charizard ex',set:'Obsidian Flames',num:'4/197',rar:'SAR',game:'pokemon',ver:'EN',gr:'PSA',gs:'10',bp:265,mp:390,cert:'45678901',buyDate:'2024-03-15',from:'eBay UK'},
+  {id:2,name:'Pikachu',set:'Celebrations',num:'1/25',rar:'Promo',game:'pokemon',ver:'JP',gr:'PSA',gs:'9',bp:85,mp:120,cert:'12345678',buyDate:'2024-06-01',from:'Card Shop HK'},
+  {id:3,name:'Mewtwo ex',set:'Scarlet & Violet 151',num:'205/165',rar:'SAR',game:'pokemon',ver:'JP',gr:'raw',gs:'',bp:92,mp:70,cert:'',buyDate:'2024-09-10',from:'Mercari JP'},
+  {id:4,name:'Monkey D. Luffy',set:'Romance Dawn OP-01',num:'OP01-060',rar:'SP',game:'onepiece',ver:'JP',gr:'BGS',gs:'9.5',bp:330,mp:480,cert:'BGS-0012345',buyDate:'2024-11-20',from:'Yahoo Auctions JP'},
+  {id:5,name:'Roronoa Zoro',set:'Paramount War OP-02',num:'OP02-061',rar:'SR',game:'onepiece',ver:'EN',gr:'raw',gs:'',bp:58,mp:54,cert:'',buyDate:'2025-01-05',from:'TCGPlayer'},
+  {id:6,name:'Boa Hancock',set:'Pillars of Strength OP-03',num:'OP03-099',rar:'SEC',game:'onepiece',ver:'JP',gr:'CGC',gs:'9',bp:132,mp:178,cert:'CGC-0056789',buyDate:'2025-02-14',from:'Card Kingdom'},
+  {id:7,name:'Psyduck',set:'M2a Mega Dream',num:'199/193',rar:'AR',game:'pokemon',ver:'JP',gr:'PSA',gs:'10',bp:48,mp:85,cert:'141953927',buyDate:'2025-03-01',from:'eBay UK'}
+];
+
+var cards=[];
+function initCards() {
+  if(!loadC()||!cards.length){cards=SEED.map(function(c){return Object.assign({},c,{img:null,hist:genH(c.mp,c.bp)});});saveC();}
+  else{cards=cards.map(function(c){return Object.assign({},c,{hist:c.hist||genH(c.mp,c.bp)});});}
+}
+
+// ── Image loading ──
+var imgCache={}, imgQ=[];
+async function getImg(card) {
+  var key=card.game+'|'+card.num;
+  if(imgCache[key]) return imgCache[key];
+  if(card.game==='pokemon'){
+    try{
+      var q='"'+card.name+'"';
+      var num=(card.num||'').split('/')[0].replace(/\D/g,'');
+      if(num) q+=' number:'+num;
+      var r=await fetch('https://api.pokemontcg.io/v2/cards?q=name:'+encodeURIComponent(q)+'&pageSize=6&select=id,name,images,set');
+      var d=await r.json();
+      if(d.data&&d.data.length){
+        var sl=(card.set||'').toLowerCase().split(' ')[0];
+        var best=d.data[0];
+        if(sl){var m=d.data.find(function(x){return x.set&&x.set.name&&x.set.name.toLowerCase().indexOf(sl)>=0;});if(m)best=m;}
+        var url=best.images.large||best.images.small;
+        imgCache[key]=url; return url;
+      }
+    }catch(x){}
+  } else if(card.num){
+    var url='https://en.onepiece-cardgame.com/images/cardlist/card/'+card.num.trim().toUpperCase()+'.png';
+    imgCache[key]=url; return url;
+  }
+  return null;
+}
+
+async function runQ() {
+  if(runQ.busy) return; runQ.busy=true;
+  while(imgQ.length){
+    var card=imgQ.shift();
+    if(card.img) continue;
+    try{
+      var url=await getImg(card);
+      if(url){
+        card.img=url; saveC();
+        var wrap=document.querySelector('[data-id="'+card.id+'"] .imgw');
+        if(wrap){
+          var ph=wrap.querySelector('.ph'); if(ph) ph.style.display='none';
+          var img=wrap.querySelector('img');
+          if(!img){img=document.createElement('img');img.alt=card.name;img.onerror=function(){this.style.display='none';};wrap.insertBefore(img,wrap.firstChild);}
+          img.src=url;
+        }
+      }
+    }catch(x){}
+    await new Promise(function(r){setTimeout(r,140);});
+  }
+  runQ.busy=false;
+}
+
+// ── Spark lines ──
+function spark(hist,pos) {
+  var pts=hist.map(function(h){return h.g;});
+  if(pts.length<2) return '';
+  var mn=Math.min.apply(null,pts),mx=Math.max.apply(null,pts),rng=mx-mn||1;
+  var W=170,H=36,p=2;
+  function x(i){return p+(i/(pts.length-1))*(W-p*2);}
+  function y(v){return H-p-(v-mn)/rng*(H-p*2);}
+  var poly=pts.map(function(v,i){return x(i).toFixed(1)+','+y(v).toFixed(1);}).join(' ');
+  var col=pos?'#1d9e75':'#d85a30';
+  var cl=x(0).toFixed(1)+','+H+' '+poly+' '+x(pts.length-1).toFixed(1)+','+H;
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="none"><polygon points="'+cl+'" fill="'+col+'25"/><polyline points="'+poly+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round"/></svg>';
+}
+
+function bigSpark(hist,pos,buyDate) {
+  var pts=hist.map(function(h){return h.g;});
+  if(pts.length<2) return '';
+  var mn=Math.min.apply(null,pts),mx=Math.max.apply(null,pts),rng=mx-mn||1;
+  var W=420,H=140,lp=46,tp=6,bp2=22,rp=6,iW=W-lp-rp,iH=H-tp-bp2;
+  function x(i){return lp+(i/(pts.length-1))*iW;}
+  function y(v){return tp+iH-(v-mn)/rng*iH;}
+  var poly=pts.map(function(v,i){return x(i).toFixed(1)+','+y(v).toFixed(1);}).join(' ');
+  var col=pos?'#1d9e75':'#d85a30';
+  var cl=x(0).toFixed(1)+','+(tp+iH)+' '+poly+' '+x(pts.length-1).toFixed(1)+','+(tp+iH);
+  var dot='';
+  if(buyDate){var idx=hist.findIndex(function(h){return h.date===buyDate;});if(idx>=0){var bx=x(idx),by=y(hist[idx].g);dot='<circle cx="'+bx.toFixed(1)+'" cy="'+by.toFixed(1)+'" r="5" fill="#1565c0" stroke="#fff" stroke-width="1.5"/><text x="'+bx.toFixed(1)+'" y="'+(by-9).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#1565c0" font-weight="700">Buy</text>';}}
+  var yl=[0,1,2,3].map(function(i){var v=mn+(mx-mn)*(i/3);var yy=y(v);return '<text x="'+(lp-4)+'" y="'+yy.toFixed(0)+'" text-anchor="end" font-size="9" fill="#888" dominant-baseline="middle">£'+v.toFixed(0)+'</text><line x1="'+lp+'" y1="'+yy.toFixed(0)+'" x2="'+(W-rp)+'" y2="'+yy.toFixed(0)+'" stroke="#88888820" stroke-width="1"/>';}).join('');
+  var xl=[0,Math.floor((pts.length-1)/4),Math.floor((pts.length-1)/2),Math.floor(3*(pts.length-1)/4),pts.length-1].map(function(i){return '<text x="'+x(i).toFixed(0)+'" y="'+(H-4)+'" text-anchor="middle" font-size="9" fill="#888">'+hist[i].date.slice(5)+'</text>';}).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" preserveAspectRatio="xMidYMid meet"><polygon points="'+cl+'" fill="'+col+'20"/><polyline points="'+poly+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linejoin="round"/>'+yl+xl+dot+'</svg>';
+}
+
+// ── Render cards ──
+function grCls(g){return{PSA:'gpsa',BGS:'gbgs',CGC:'gcgc',raw:'graw'}[g]||'graw';}
+function gLink(c){if(c.gr==='raw'||!c.cert) return null;var n=c.cert.replace(/\D/g,'');if(c.gr==='PSA') return 'https://www.psacard.com/cert/'+n;if(c.gr==='BGS') return 'https://www.beckett.com/grading/verify';if(c.gr==='CGC') return 'https://www.cgccards.com/certlookup/'+n;}
+function pct(b,m){return((m-b)/b*100).toFixed(1);}
+function fmtD(d){if(!d) return '-';try{return new Date(d+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(x){return d;}}
+function dSince(d){if(!d) return null;try{return Math.round((Date.now()-new Date(d+'T00:00:00'))/86400000);}catch(x){return null;}}
+
+function renderStats(fc) {
+  var tB=fc.reduce(function(s,c){return s+c.bp;},0);
+  var tM=fc.reduce(function(s,c){return s+c.mp;},0);
+  var pnl=tM-tB,pp=tB?(pnl/tB*100).toFixed(1):0;
+  $('stats').innerHTML=
+    '<div class="sc"><div class="sc-l">Cards</div><div class="sc-v">'+fc.length+'</div><div class="sc-s">'+fc.filter(function(c){return c.mp>=c.bp;}).length+' winners</div></div>'+
+    '<div class="sc"><div class="sc-l">Cost</div><div class="sc-v">&pound;'+tB.toLocaleString()+'</div><div class="sc-s">$'+toHKD(tB).toLocaleString()+' HKD</div></div>'+
+    '<div class="sc"><div class="sc-l">Market</div><div class="sc-v">&pound;'+tM.toLocaleString()+'</div><div class="sc-s">$'+toHKD(tM).toLocaleString()+' HKD</div></div>'+
+    '<div class="sc"><div class="sc-l">P&amp;L</div><div class="sc-v '+(pnl>=0?'pos':'neg')+'">'+(pnl>=0?'+':'')+'&pound;'+Math.abs(pnl).toLocaleString()+'</div><div class="sc-s '+(pnl>=0?'pos':'neg')+'">'+(pnl>=0?'&#x25B2;':'&#x25BC;')+' '+Math.abs(pp)+'%</div></div>';
+}
+
+function cardHTML(c) {
+  var p=parseFloat(pct(c.bp,c.mp)),pos=p>=0;
+  var gl=gLink(c),gl2=c.gr==='raw'?'Ungraded':c.gr+' '+c.gs;
+  var imgPart=c.img?'<img src="'+e(c.img)+'" alt="'+e(c.name)+'" loading="lazy" onerror="this.style.display=\'none\'">':'<div class="ph">'+(c.game==='pokemon'?'&#x26A1;':'&#x1F3F4;&#xFE0F;')+'</div>';
+  var pnlV=(c.mp-c.bp).toFixed(2),pnlPos=c.mp>=c.bp;
+  return '<div class="card" data-id="'+c.id+'">'+
+    '<div class="dcon"><div class="dct">Delete this card?</div><div class="dcs">'+e(c.name)+'</div><div class="dca"><button class="dc-no">Cancel</button><button class="dc-yes">&#x2713; Delete</button></div></div>'+
+    '<button class="dbtn" title="Delete">&#x1F5D1;&#xFE0F;</button>'+
+    '<div class="imgw">'+imgPart+'<span class="cbr '+grCls(c.gr)+'">'+e(gl2)+'</span><span class="cbl '+(c.ver==='JP'?'ljp':'len')+'">'+c.ver+'</span></div>'+
+    '<div class="cbody">'+
+    '<div class="cn" title="'+e(c.name)+'">'+hlText(c.name,searchToks)+'</div>'+
+    '<div class="cs">'+hlText(c.set+(c.num?' &middot; '+c.num:''),searchToks)+'</div>'+
+    '<div class="prow"><div><div class="pl">Market</div><div class="pv">&pound;'+c.mp.toLocaleString()+'</div><div class="bl">&#x8CB7;&#x5165; &pound;'+c.bp.toLocaleString()+' &middot; <span class="'+(pnlPos?'pos':'neg')+'">'+(pnlPos?'+':'')+'&pound;'+pnlV+'</span></div></div><span class="pct '+(pos?'pp':'pn')+'">'+(pos?'&#x25B2;':'&#x25BC;')+' '+Math.abs(p)+'%</span></div>'+
+    '<div class="ps">$'+toHKD(c.mp).toLocaleString()+' HKD &middot; &yen;'+toJPY(c.mp).toLocaleString()+'</div>'+
+    '<div class="mc">'+spark(c.hist,pos)+'</div>'+
+    '<div class="acts">'+
+    '<button class="act det-btn">&#x1F4C8; Detail</button>'+
+    (gl?'<a class="act alink" href="'+gl+'" target="_blank">'+c.gr+' Cert</a>':'')+
+    '</div></div></div>';
+}
+
+function draw() {
+  var allBase=cards.filter(filterBase);
+  var fc=allBase.filter(function(c){return cMatch(c,searchToks);});
+  renderStats(fc); renderFilters(); renderMeta(allBase.length,fc.length);
+  if(!fc.length){$('grid').innerHTML='<div class="empty">No cards match</div>';return;}
+  $('grid').innerHTML=fc.map(cardHTML).join('');
+
+  // Attach card events
+  $('grid').querySelectorAll('.card').forEach(function(card) {
+    var id=+card.dataset.id;
+    var con=card.querySelector('.dcon');
+    var dbtn=card.querySelector('.dbtn');
+    var detBtn=card.querySelector('.det-btn');
+    var dcNo=card.querySelector('.dc-no');
+    var dcYes=card.querySelector('.dc-yes');
+
+    card.addEventListener('click',function(){openDet(id);});
+    dbtn.addEventListener('click',function(ev){ev.stopPropagation();con.classList.add('on');});
+    dcNo.addEventListener('click',function(ev){ev.stopPropagation();con.classList.remove('on');});
+    dcYes.addEventListener('click',function(ev){ev.stopPropagation();cards=cards.filter(function(c){return c.id!==id;});saveC();draw();});
+    con.addEventListener('click',function(ev){ev.stopPropagation();});
+    detBtn.addEventListener('click',function(ev){ev.stopPropagation();openDet(id);});
+    card.querySelectorAll('.act,.alink').forEach(function(a){a.addEventListener('click',function(ev){ev.stopPropagation();});});
+  });
+
+  // Queue images
+  var seen={};
+  fc.forEach(function(c){if(!c.img&&!seen[c.id]){seen[c.id]=1;imgQ.push(c);}});
+  runQ();
+}
+
+// ── Detail modal ──
+on('detClose','click',function(){$('detOv').classList.remove('on');});
+$('detOv').addEventListener('click',function(ev){if(ev.target===$('detOv'))$('detOv').classList.remove('on');});
+
+function openDet(id) {
+  var c=cards.find(function(x){return x.id===id;});
+  if(!c) return;
+  var p=parseFloat(pct(c.bp,c.mp)),pos=p>=0;
+  var pnl=c.mp-c.bp,pnlP=(pnl/c.bp*100).toFixed(1);
+  var gl=gLink(c),em=c.game==='pokemon'?'&#x26A1;':'&#x1F3F4;&#xFE0F;';
+  var pack=PACKS[c.set],packId=pack?pack.id:null;
+  var days=dSince(c.buyDate),chgPos=pnl>=0;
+  $('detTitle').textContent=c.name;
+  $('detBody').innerHTML=
+    '<div class="dg">'+
+    '<div>'+
+    '<div class="dib">'+(c.img?'<img src="'+e(c.img)+'" alt="'+e(c.name)+'" onerror="this.parentNode.innerHTML=\'<div style=font-size:48px;padding:2rem>'+em+'</div>\'">':'<div style="font-size:48px;padding:2rem">'+em+'</div>')+'</div>'+
+    '<div style="text-align:center;font-size:11px;color:var(--text2);margin-top:8px;line-height:1.6">'+e(c.set)+(c.num?'<br>'+e(c.num):'')+'</div>'+
+    (gl?'<a href="'+gl+'" target="_blank" class="act alink" style="display:flex;margin-top:8px;justify-content:center">&#x1F517; '+c.gr+' Certificate</a>':'')+
+    '</div>'+
+    '<div>'+
+    '<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<span style="font-size:10px;background:var(--bg2);border:.5px solid var(--border);padding:2px 8px;border-radius:10px;font-weight:700">'+c.ver+'</span>'+
+    '<span style="font-size:10px;background:var(--bg2);border:.5px solid var(--border);padding:2px 8px;border-radius:10px">'+(c.game==='pokemon'?'Pokemon':'One Piece')+'</span>'+
+    (c.rar?'<span style="font-size:10px;background:var(--bg2);border:.5px solid var(--border);padding:2px 8px;border-radius:10px">'+e(c.rar)+'</span>':'')+
+    '<span class="cbr '+grCls(c.gr)+'" style="position:static">'+(c.gr==='raw'?'Ungraded':c.gr+' '+c.gs)+'</span>'+
+    '</div>'+
+    '<div class="pbox"><div class="pbt">Purchase Details</div>'+
+    '<div class="pbr"><span class="pbl">Date bought</span><span class="pbv">'+fmtD(c.buyDate)+(days!==null?' <span style="color:var(--text3);font-weight:400;font-size:11px">('+days+'d ago)</span>':'')+'</span></div>'+
+    '<div class="pbr"><span class="pbl">Bought from</span><span class="pbv">'+e(c.from||'-')+'</span></div>'+
+    '<div class="pbr"><span class="pbl">Buy price</span><span class="pbv">&pound;'+c.bp.toLocaleString()+' <span style="color:var(--text3);font-weight:400;font-size:11px">($'+toHKD(c.bp).toLocaleString()+' &middot; &yen;'+toJPY(c.bp).toLocaleString()+')</span></span></div>'+
+    '</div>'+
+    '<div class="ab"><div class="abh">Price Analysis &mdash; Buy Date to Today</div>'+
+    '<div class="ag">'+
+    '<div class="ac"><div class="acl">Buy Price</div><div class="acv">&pound;'+c.bp.toLocaleString()+'</div><div class="acs">'+fmtD(c.buyDate)+'</div></div>'+
+    '<div class="ac"><div class="acl">Market Now</div><div class="acv">&pound;'+c.mp.toLocaleString()+'</div><div class="acs">$'+toHKD(c.mp).toLocaleString()+' HKD</div></div>'+
+    '<div class="ac"><div class="acl">Change</div><div class="acv '+(chgPos?'pos':'neg')+'">'+(chgPos?'+':'')+'&pound;'+pnl.toFixed(2)+'</div><div class="acs"><span class="tb '+(chgPos?'tbu':'tbd')+'">'+(chgPos?'&#x25B2;':'&#x25BC;')+' '+Math.abs(pnlP)+'%</span></div></div>'+
+    '</div></div>'+
+    '<div style="margin:8px 0">'+bigSpark(c.hist,pos,c.buyDate)+'</div>'+
+    '<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">7-Day History</div>'+
+    '<table class="ht"><tr><th>Date</th><th>GBP</th><th>HKD</th><th>JPY</th><th>Change</th></tr>'+
+    c.hist.slice(-7).reverse().map(function(h,i,a){var prev=a[i+1];var d=prev?((h.g-prev.g)/prev.g*100).toFixed(1):null;return'<tr><td>'+h.date.slice(5)+'</td><td>&pound;'+h.g.toFixed(2)+'</td><td>$'+toHKD(h.g).toLocaleString()+'</td><td>&yen;'+toJPY(h.g).toLocaleString()+'</td><td>'+(d?'<span class="'+(parseFloat(d)>=0?'pos':'neg')+'">'+(parseFloat(d)>=0?'&#x25B2;':'&#x25BC;')+Math.abs(d)+'%</span>':'-')+'</td></tr>';}).join('')+
+    '</table>'+
+    '</div></div>'+
+    (pack?'<div style="margin-top:1.25rem;padding-top:1.25rem;border-top:.5px solid var(--border)">'+
+    '<div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Booster Pack</div>'+
+    '<div class="pb" id="packLnk"><div class="pbi"><div class="pbe">'+pack.em+'</div><div><div class="pbn">'+e(pack.full)+'</div><div class="pbs">'+e(c.set)+'</div><div class="pbt2">&#x25B6; See top 10 most valuable cards</div></div></div></div>'+
+    '</div>':'');
+
+  if(pack){
+    document.getElementById('packLnk').addEventListener('click',function(){
+      $('detOv').classList.remove('on');
+      setTimeout(function(){openPack(packId,pack.full);},120);
+    });
+  }
+  $('detOv').classList.add('on');
+}
+
+// ── Pack modal ──
+on('packClose','click',function(){$('packOv').classList.remove('on');});
+$('packOv').addEventListener('click',function(ev){if(ev.target===$('packOv'))$('packOv').classList.remove('on');});
+
+function openPack(packId,title) {
+  $('packTitle').textContent=title;
+  var sorted=(PT[packId]||[]).slice().sort(function(a,b){return b.mp-a.mp;});
+  $('packBody').innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Top 10 by market value</div><div class="t10g">'+
+    sorted.map(function(t,i){return '<div class="t10c"><div class="t10i" id="pi'+i+'"><div style="font-size:20px">'+(t.g==='pokemon'?'&#x26A1;':'&#x1F3F4;&#xFE0F;')+'</div></div><div class="t10b"><div class="t10r">#'+(i+1)+'</div><div class="t10n" title="'+e(t.n)+'">'+e(t.n)+'</div><div class="t10p">&pound;'+t.mp.toLocaleString()+'</div><div style="font-size:10px;color:var(--text3)">$'+toHKD(t.mp).toLocaleString()+' HKD</div></div></div>';}).join('')+'</div>';
+  sorted.forEach(function(t,i){
+    if(t.g==='onepiece'&&t.num){
+      var url='https://en.onepiece-cardgame.com/images/cardlist/card/'+t.num.trim().toUpperCase()+'.png';
+      setTimeout(function(){var w=document.getElementById('pi'+i);if(w){var img=document.createElement('img');img.src=url;img.style.cssText='width:100%;height:100%;object-fit:contain';img.onerror=function(){this.style.display='none';};w.innerHTML='';w.appendChild(img);}},i*80);
+    } else if(t.g==='pokemon'&&t.num){
+      var num=t.num.split('/')[0].replace(/\D/g,'');
+      (function(num,i){setTimeout(async function(){try{var r=await fetch('https://api.pokemontcg.io/v2/cards?q=number:'+num+'&pageSize=2&select=images');var d=await r.json();if(d.data&&d.data.length){var url=d.data[0].images.small;var w=document.getElementById('pi'+i);if(w){var img=document.createElement('img');img.src=url;img.style.cssText='width:100%;height:100%;object-fit:contain';img.onerror=function(){this.style.display='none';};w.innerHTML='';w.appendChild(img);}}}catch(x){}},i*160);})(num,i);
+    }
+  });
+  $('packOv').classList.add('on');
+}
+
+// ── API Key ──
+var apiKey='';
+function loadKey(){try{apiKey=localStorage.getItem('ct_api_k')||'';}catch(x){apiKey='';}}
+function updateKeyUI(){
+  var has=!!apiKey;
+  $('apiSt').className='apis '+(has?'ok':'need');
+  $('apiStTxt').textContent=has?'API key saved — ready to scan':'Add Anthropic API key to enable auto-scan';
+  $('apiHint').style.display=has?'none':'block';
+  $('apiClr').style.display=has?'block':'none';
+  if(has)$('apiKey').value='sk-ant-xxxx'+apiKey.slice(-4);
+  $('sdropTxt').innerHTML=has?'<strong>Upload card photo</strong> &mdash; AI identifies &amp; auto-fills all fields<br><span style="font-size:11px;opacity:.7">JPG &middot; PNG &middot; WEBP &middot; PSA/BGS/CGC slabs</span>':'<strong>Upload card photo</strong> &mdash; AI identifies &amp; auto-fills all fields<br><span style="font-size:11px;opacity:.7">Save API key above first</span>';
+}
+on('apiSave','click',function(){
+  var v=$('apiKey').value.trim();
+  if(!v){alert('Please enter your API key');return;}
+  if(!v.startsWith('sk-ant-')){alert('Key must start with sk-ant-');return;}
+  apiKey=v;try{localStorage.setItem('ct_api_k',v);}catch(x){}
+  updateKeyUI();
+});
+on('apiClr','click',function(){apiKey='';try{localStorage.removeItem('ct_api_k');}catch(x){}$('apiKey').value='';updateKeyUI();});
+
+// ── Add Card modal ──
+on('addBtn','click',openAdd);
+on('addClose','click',function(){$('addOv').classList.remove('on');});
+$('addOv').addEventListener('click',function(ev){if(ev.target===$('addOv'))$('addOv').classList.remove('on');});
+
+function openAdd(){
+  pendImg=null;
+  $('sthumbs').innerHTML='';
+  $('scanPanel').style.display='none';
+  ['stScan','stOk','stErr'].forEach(function(id){$(id).style.display='none';});
+  $('dupBox').style.display='none';
+  $('fbd').value=new Date().toISOString().slice(0,10);
+  ['fn','fs','fno','fra','fbp','fmp','fct','fgs','fbf'].forEach(function(id){var el=$(id);if(el)el.value='';});
+  $('fxbox').style.display='none';
+  $('fgn').style.display='none'; $('fcn').style.display='none';
+  $('fcd').value='raw';
+  $('addOv').classList.add('on');
+}
+
+on('fcd','change',function(){
+  var g=this.value!=='raw';
+  $('fgn').style.display=g?'block':'none';
+  $('fcn').style.display=g?'block':'none';
+});
+
+function updateFXPreview(){
+  var b=parseFloat($('fbp').value)||0,m=parseFloat($('fmp').value)||0;
+  if(!b&&!m){$('fxbox').style.display='none';return;}
+  $('fxbox').style.display='flex';
+  $('fb2').textContent='$'+toHKD(b).toLocaleString()+' HKD';
+  $('fb3').textContent='¥'+toJPY(b).toLocaleString();
+  $('fm2').textContent='$'+toHKD(m).toLocaleString()+' HKD';
+  $('fm3').textContent='¥'+toJPY(m).toLocaleString();
+}
+on('fbp','input',updateFXPreview);
+on('fmp','input',updateFXPreview);
+
+// ── Scan ──
+var pendImg=null;
+on('sdrop','click',function(){if(!apiKey){$('apiKey').focus();return;}$('fi').click();});
+on('fi','change',function(){if(this.files[0]) doScan(this.files[0]);});
+
+async function toJpeg(file){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(file);
+    var img=new Image();
+    img.onload=function(){
+      var c=document.createElement('canvas');
+      var w=img.naturalWidth,h=img.naturalHeight;
+      if(w>1024){h=Math.round(h*1024/w);w=1024;}
+      c.width=w;c.height=h;
+      var ctx=c.getContext('2d');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg',.85).split(',')[1]);
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('Image load failed'));};
+    img.src=url;
+  });
+}
+
+function findDupes(info){
+  var nl=(info.name||'').toLowerCase().trim();
+  var nc=(info.cardNumber||'').replace(/\s/g,'').toLowerCase();
+  var ver=(info.version||'').toUpperCase();
+  var cert=(info.certNumber||'').replace(/\D/g,'');
+  var gr=(info.gradingCompany||'').toLowerCase();
+  var gs=(info.gradeScore||'').toString();
+  return cards.filter(function(c){
+    if(cert&&c.cert&&c.cert.replace(/\D/g,'')==cert) return true;
+    var cn=c.name.toLowerCase();
+    var cnum=(c.num||'').replace(/\s/g,'').toLowerCase();
+    var nok=nl&&cn.split(' ')[0]==nl.split(' ')[0];
+    var numok=nc&&cnum&&cnum.split('/')[0]==nc.split('/')[0];
+    var verok=!ver||c.ver==ver;
+    var grok=gr&&c.gr.toLowerCase()==gr&&gs&&c.gs==gs;
+    return(nok&&numok&&verok)||(nok&&grok);
+  });
+}
+
+function showDupes(dupes){
+  $('dupBox').style.display='block';
+  var rows=dupes.map(function(d){
+    var img=d.img?'<img src="'+e(d.img)+'" style="width:100%;height:100%;object-fit:contain" onerror="this.style.display=\'none\'" alt="">':(d.game=='pokemon'?'&#x26A1;':'&#x1F3F4;&#xFE0F;');
+    var pnl=d.mp-d.bp,pos=pnl>=0;
+    return '<div class="dupr"><div class="dupi">'+img+'</div><div><div class="dupn">'+e(d.name)+'</div><div class="dupm">'+e(d.set)+' &middot; '+e(d.num||'-')+'<br>'+d.ver+' &middot; '+(d.gr=='raw'?'Ungraded':d.gr+' '+d.gs)+'<br>&pound;'+d.bp+' buy &middot; &pound;'+d.mp+' market &middot; <span class="'+(pos?'pos':'neg')+'">'+(pos?'+':'')+'&pound;'+pnl.toFixed(2)+'</span></div></div></div>';
+  }).join('');
+  $('dupBox').innerHTML='<div class="dupb"><div class="duph">&#x26A0;&#xFE0F; You already have '+dupes.length+' similar card(s)</div>'+rows+'<div class="dupa"><button class="dupav" id="dupView">View existing card</button><button class="dupaa" id="dupAdd">Add anyway</button></div></div>';
+  document.getElementById('dupView').addEventListener('click',function(){$('addOv').classList.remove('on');setTimeout(function(){openDet(dupes[0].id);},200);});
+  document.getElementById('dupAdd').addEventListener('click',function(){$('dupBox').style.display='none';});
+}
+
+async function doScan(file){
+  $('sthumbs').innerHTML='';
+  var im=document.createElement('img');im.src=URL.createObjectURL(file);im.className='sthumb';$('sthumbs').appendChild(im);
+  $('scanPanel').style.display='block';
+  $('stScan').style.display='block';$('stOk').style.display='none';$('stErr').style.display='none';$('dupBox').style.display='none';
+  pendImg=null;
+  var b64;
+  try{b64=await toJpeg(file);}catch(x){$('stScan').style.display='none';$('stErr').style.display='block';$('errTxt').textContent='X Image conversion failed: '+x.message;return;}
+  try{
+    var resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:500,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},{type:'text',text:'Identify this trading card. Return ONLY valid JSON (no markdown): {"name":"","set":"","cardNumber":"","rarity":"","game":"pokemon or onepiece","version":"JP or EN","isGraded":true,"gradingCompany":"PSA or BGS or CGC or null","gradeScore":"10 or null","certNumber":"cert number on slab or null","confidence":"high or medium or low"}'}]}]})
+    });
+    if(!resp.ok){var er=await resp.json().catch(function(){return{};});throw new Error('API '+resp.status+': '+(er.error&&er.error.message||resp.statusText));}
+    var data=await resp.json();
+    var txt=(data.content||[]).filter(function(b){return b.type=='text';}).map(function(b){return b.text;}).join('');
+    var info=JSON.parse(txt.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim());
+    applyInfo(info);
+    $('stScan').style.display='none';$('stOk').style.display='block';
+    $('scanGrid').innerHTML=
+      '<div class="ff"><div class="ffl">Name</div><div class="ffv">'+e(info.name||'-')+'</div></div>'+
+      '<div class="ff"><div class="ffl">Set &middot; Number</div><div class="ffv">'+e(info.set||'-')+' &middot; '+e(info.cardNumber||'-')+'</div></div>'+
+      '<div class="ff"><div class="ffl">Game &middot; Version</div><div class="ffv">'+e(info.game||'-')+' &middot; '+e(info.version||'-')+'</div></div>'+
+      '<div class="ff"><div class="ffl">Condition</div><div class="ffv">'+(info.isGraded?e(info.gradingCompany)+' '+e(info.gradeScore):'Ungraded')+'</div></div>'+
+      (info.certNumber?'<div class="ff" style="grid-column:1/-1"><div class="ffl">Cert #</div><div class="ffv">'+e(info.certNumber)+'</div></div>':'');
+    getImg({name:info.name,set:info.set,num:info.cardNumber,game:info.game,img:null}).then(function(url){
+      if(url){pendImg=url;$('scanImg').innerHTML='<div class="ofp"><img class="ofi" src="'+e(url)+'" alt="" onerror="this.style.display=\'none\'"><div style="font-size:11px;color:var(--text2)"><strong style="display:block;color:var(--text);margin-bottom:2px">Official image found</strong>Will be saved with card</div></div>';}
+    });
+    var dupes=findDupes(info);
+    if(dupes.length>0) setTimeout(function(){showDupes(dupes);},300);
+  }catch(x){$('stScan').style.display='none';$('stErr').style.display='block';$('errTxt').textContent='X '+x.message;}
+}
+
+function applyInfo(info){
+  if(info.name)$('fn').value=info.name;
+  if(info.set)$('fs').value=info.set;
+  if(info.cardNumber)$('fno').value=info.cardNumber;
+  if(info.rarity)$('fra').value=info.rarity;
+  if(info.game)$('fgm').value=info.game;
+  if(info.version)$('fvr').value=info.version;
+  if(info.isGraded&&info.gradingCompany){$('fcd').value=info.gradingCompany;$('fgn').style.display='block';$('fcn').style.display='block';if(info.gradeScore)$('fgs').value=info.gradeScore;if(info.certNumber)$('fct').value=info.certNumber;}
+  else{$('fcd').value='raw';$('fgn').style.display='none';$('fcn').style.display='none';}
+}
+
+on('addSubmit','click',function(){
+  var name=$('fn').value.trim();if(!name){alert('Card name is required');return;}
+  var bp=parseFloat($('fbp').value)||0;
+  var mp=parseFloat($('fmp').value)||bp;
+  cards.unshift({id:Date.now(),name:name,set:$('fs').value.trim(),num:$('fno').value.trim(),rar:$('fra').value.trim(),game:$('fgm').value,ver:$('fvr').value,gr:$('fcd').value,gs:$('fgs').value,bp:bp,mp:mp,cert:$('fct').value.trim(),buyDate:$('fbd').value,from:$('fbf').value.trim(),img:pendImg,hist:genH(mp,bp)});
+  saveC();pendImg=null;$('addOv').classList.remove('on');draw();
+});
+
+// ── Init ──
+loadKey();updateKeyUI();initCards();doFX();draw();
+
+})();
+</script>
+</body>
+</html>
