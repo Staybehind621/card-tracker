@@ -782,21 +782,41 @@ function openPack(packId,title){
 var apiKey='';     // Anthropic (scan)
 var ptcgKey='';    // Pokemon TCG API
 
+// ── HARDCODED_KEYS ── Edit these in GitHub to pre-load your keys ──
+var BAKED_ANT_KEY  = '';  // paste Anthropic key here:  'sk-ant-api03-...'
+var BAKED_PTCG_KEY = '';  // paste pokemontcg.io key here: 'abc123...'
+// ────────────────────────────────────────────────────────────────────
+
 function loadAllKeys(){
   try{apiKey=localStorage.getItem('ct_api_k')||'';}catch(e){apiKey='';}
   try{ptcgKey=localStorage.getItem('ct_ptcg_k')||'';}catch(e){ptcgKey='';}
+  // Baked-in keys override localStorage if localStorage is empty
+  if(!apiKey&&BAKED_ANT_KEY)apiKey=BAKED_ANT_KEY;
+  if(!ptcgKey&&BAKED_PTCG_KEY)ptcgKey=BAKED_PTCG_KEY;
 }
 
+function clearMasked(el){
+  // Clear field when focused if it contains masked placeholder dots
+  if(el.value && (el.value.indexOf('•')>=0 || el.value.indexOf('’')>=0)){
+    el.value='';
+    el.style.borderColor='var(--text)';
+  }
+}
 function saveApiKey(which){
   if(which==='ant'){
     var v=$('antKey').value.trim();
-    if(!v){alert('Please enter the key');return;}
+    if(!v){alert('Please paste your Anthropic key');return;}
+    // Reject if still showing masked placeholder
+    if(v.indexOf('•')>=0){alert('Please clear the field and paste your actual key');return;}
     if(!v.startsWith('sk-ant-')){alert('Anthropic key must start with sk-ant-');return;}
     apiKey=v;try{localStorage.setItem('ct_api_k',v);}catch(e){}
+    alert('\u2713 Anthropic key saved!');
   } else if(which==='ptcg'){
     var v=$('ptcgKey').value.trim();
-    if(!v){alert('Please enter the key');return;}
+    if(!v){alert('Please paste your pokemontcg.io key');return;}
+    if(v.indexOf('•')>=0){alert('Please clear the field and paste your actual key');return;}
     ptcgKey=v;try{localStorage.setItem('ct_ptcg_k',v);}catch(e){}
+    alert('\u2713 pokemontcg.io key saved!');
   }
   updateSettingsUI();
 }
@@ -1003,7 +1023,7 @@ initTheme();loadAllKeys();updateSettingsUI();initCards();doFX();draw();
             <span id="ptcgStatus" style="font-size:10px;font-weight:400;color:var(--text3)">not set</span>
           </div>
           <div class="api-inp-row">
-            <input class="api-inp-set" type="password" id="ptcgKey" placeholder="Paste key here...">
+            <input class="api-inp-set" type="password" id="ptcgKey" placeholder="Paste key here..." onfocus="clearMasked(this)" autocomplete="new-password">=0)this.value=''" autocomplete="off" autocorrect="off" spellcheck="false">
             <button class="api-save-btn" onclick="saveApiKey('ptcg')">Save</button>
             <button class="api-clear-btn" id="ptcgClr" onclick="clearApiKey('ptcg')" style="display:none">Clear</button>
           </div>
@@ -1033,7 +1053,7 @@ initTheme();loadAllKeys();updateSettingsUI();initCards();doFX();draw();
             <span id="antStatus" style="font-size:10px;font-weight:400;color:var(--text3)">not set</span>
           </div>
           <div class="api-inp-row">
-            <input class="api-inp-set" type="password" id="antKey" placeholder="sk-ant-api03-...">
+            <input class="api-inp-set" type="password" id="antKey" placeholder="sk-ant-api03-..." onfocus="clearMasked(this)" autocomplete="new-password">=0)this.value=''" autocomplete="off" autocorrect="off" spellcheck="false">
             <button class="api-save-btn" onclick="saveApiKey('ant')">Save</button>
             <button class="api-clear-btn" id="antClr" onclick="clearApiKey('ant')" style="display:none">Clear</button>
           </div>
@@ -1062,6 +1082,25 @@ initTheme();loadAllKeys();updateSettingsUI();initCards();doFX();draw();
           <div style="background:var(--bg2);border-radius:8px;padding:9px 12px">
             <div style="font-size:10px;color:var(--text3);margin-bottom:3px">GBP &rarr; JPY</div>
             <div style="font-size:16px;font-weight:700" id="setRJP">-</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backup / Export keys -->
+      <div class="set-section">
+        <div class="set-section-title">Backup &amp; Portability</div>
+        <div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px">
+          To keep your API keys across devices or update without re-uploading, paste your keys directly into the HTML file on GitHub.
+        </div>
+        <div style="background:var(--bg2);border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.8">
+          <div style="font-weight:700;margin-bottom:6px">&#x1F4CB; Edit keys directly in GitHub:</div>
+          <div style="color:var(--text2)">
+            1. Open your repo on github.com<br>
+            2. Click <code style="background:var(--bg3,#333);padding:1px 5px;border-radius:3px">index.html</code> &rarr; pencil icon &#x270F;<br>
+            3. Press <kbd style="background:var(--bg3,#333);padding:1px 5px;border-radius:3px">Ctrl+F</kbd> and search for:<br>
+            <code style="background:var(--bg3,#333);padding:2px 7px;border-radius:3px;display:block;margin:4px 0">HARDCODED_KEYS</code>
+            4. Replace the empty strings with your keys<br>
+            5. Commit &rarr; site updates in ~1 min
           </div>
         </div>
       </div>
